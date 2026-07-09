@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Monitoring Premium</title>
+  <title>Dashboard Monitoring Premium - Multi Table</title>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style>
     body { background-color: #f3f4f6; }
@@ -11,62 +11,129 @@
 </head>
 <body class="p-4 md:p-8">
 
-  <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-    <div class="bg-blue-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
+  <div class="max-w-7xl mx-auto flex flex-col gap-6">
+    
+    <div class="bg-blue-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 rounded-2xl shadow-xl">
       <div>
-        <h1 class="text-2xl font-bold tracking-wide">📊 MONITORING DATA PRESENSI</h1>
-        <p class="text-blue-200 text-sm mt-1">Sistem Laporan Real-Time Bubugao</p>
+        <h1 class="text-2xl font-bold tracking-wide">📊 DASHBOARD MONITORING PRESENSI</h1>
+        <p class="text-blue-200 text-sm mt-1">Sistem Laporan Terpisah Real-Time Bubugao</p>
       </div>
       
       <div class="flex items-center gap-2 bg-blue-800 p-2 rounded-xl border border-blue-700">
-        <label class="text-sm font-semibold whitespace-nowrap">Filter Data:</label>
+        <label class="text-sm font-semibold whitespace-nowrap">Filter Data (Kolom M):</label>
         <select id="filterDropdown" class="bg-white text-gray-800 rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer w-44">
-          </select>
+          <option>Memuat...</option>
+        </select>
       </div>
     </div>
 
-    <div class="overflow-x-auto p-6">
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr id="tableHeader" class="border-b-2 border-gray-200 text-gray-600 text-sm font-bold uppercase tracking-wider">
-            </tr>
-        </thead>
-        <tbody id="tableBody" class="text-gray-700 text-sm divide-y divide-gray-100">
-          <tr>
-            <td colspan="7" class="text-center py-10 text-gray-400 font-medium animate-pulse">⏳ Sedang menarik data presensi...</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden flex flex-col">
+        <div class="bg-gray-100 px-5 py-3 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center">
+          <span>📋 Data Utama (Kolom A - E)</span>
+          <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Tabel 1</span>
+        </div>
+        <div class="overflow-x-auto p-4 flex-grow">
+          <table class="w-full text-left border-collapse text-xs md:text-sm">
+            <thead>
+              <tr id="headerA_E" class="border-b-2 border-gray-200 text-gray-500 font-bold uppercase tracking-wider"></tr>
+            </thead>
+            <tbody id="bodyA_E" class="text-gray-700 divide-y divide-gray-100">
+              <tr><td colspan="5" class="text-center py-6 text-gray-400">⏳ Menunggu data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden flex flex-col">
+        <div class="bg-gray-100 px-5 py-3 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center">
+          <span>🔍 Detail Log (Kolom G - K)</span>
+          <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Tabel 2</span>
+        </div>
+        <div class="overflow-x-auto p-4 flex-grow">
+          <table class="w-full text-left border-collapse text-xs md:text-sm">
+            <thead>
+              <tr id="headerG_K" class="border-b-2 border-gray-200 text-gray-500 font-bold uppercase tracking-wider"></tr>
+            </thead>
+            <tbody id="bodyG_K" class="text-gray-700 divide-y divide-gray-100">
+              <tr><td colspan="5" class="text-center py-6 text-gray-400">⏳ Menunggu data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden flex flex-col">
+        <div class="bg-gray-100 px-5 py-3 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center">
+          <span>📊 Status Kehadiran (Kolom M - N)</span>
+          <span class="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Tabel 3</span>
+        </div>
+        <div class="overflow-x-auto p-4 flex-grow">
+          <table class="w-full text-left border-collapse text-xs md:text-sm">
+            <thead>
+              <tr id="headerM_N" class="border-b-2 border-gray-200 text-gray-500 font-bold uppercase tracking-wider"></tr>
+            </thead>
+            <tbody id="bodyM_N" class="text-gray-700 divide-y divide-gray-100">
+              <tr><td colspan="2" class="text-center py-6 text-gray-400">⏳ Menunggu data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden flex flex-col">
+        <div class="bg-gray-100 px-5 py-3 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center">
+          <span>📌 Keterangan Tambahan (Kolom P - Q)</span>
+          <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Tabel 4</span>
+        </div>
+        <div class="overflow-x-auto p-4 flex-grow">
+          <table class="w-full text-left border-collapse text-xs md:text-sm">
+            <thead>
+              <tr id="headerP_Q" class="border-b-2 border-gray-200 text-gray-500 font-bold uppercase tracking-wider"></tr>
+            </thead>
+            <tbody id="bodyP_Q" class="text-gray-700 divide-y divide-gray-100">
+              <tr><td colspan="2" class="text-center py-6 text-gray-400">⏳ Menunggu data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <script>
-    // 💡 URL Baru Anda + Pengaktif Fitur Keluarannya (?action=kehadiran)
+    // Link API Google Apps Script Anda yang sudah aktif
     const API_URL = "https://script.google.com/macros/s/AKfycbx2PBgvgwQ21LuIoOpx8VQcEi6GsycKi2JCvx0CBIDwqRqJK80xuY5eq_sdoAjWqDLk2Q/exec?action=kehadiran"; 
     
-    // Filter berdasarkan kolom ke-7 (Index 6 = Kolom G di Google Sheets Anda)
+    // Konfigurasi Filter Utama memakai Kolom M (Index ke-12)
     const KOLOM_FILTER = 12; 
     let masterRows = [];
+
+    // Pemetaan index array sesuai rentang kolom di Google Sheet
+    const RANGE_A_E = [0, 1, 2, 3, 4];       // Kolom A, B, C, D, E
+    const RANGE_G_K = [6, 7, 8, 9, 10];     // Kolom G, H, I, J, K
+    const RANGE_M_N = [12, 13];             // Kolom M, N
+    const RANGE_P_Q = [15, 16];             // Kolom P, Q
 
     async function ambilData() {
       try {
         const response = await fetch(API_URL);
-        if (!response.ok) throw new Error("Koneksi gagal atau terblokir kebijakan Google");
+        if (!response.ok) throw new Error("Gagal terhubung dengan server Google API");
         
         const data = await response.json();
-        
         if (data.error) throw new Error(data.error);
-        if (data.length === 0) throw new Error("Data di sheet KEHADIRAN kosong");
+        if (data.length === 0) throw new Error("Data Sheet Kosong");
         
         const headers = data[0]; 
         masterRows = data.slice(1);  
         
-        // 1. Buat Header Tabel Otomatis
-        document.getElementById('tableHeader').innerHTML = headers.map(h => `<th class="py-3 px-4">${h}</th>`).join('');
+        // 1. Generate Judul Header Otomatis untuk Masing-Masing Tabel
+        buatHeader('headerA_E', headers, RANGE_A_E);
+        buatHeader('headerG_K', headers, RANGE_G_K);
+        buatHeader('headerM_N', headers, RANGE_M_N);
+        buatHeader('headerP_Q', headers, RANGE_P_Q);
         
-        // 2. Ambil Data Unik untuk Dropdown
+        // 2. Generate Dropdown Unik dari Kolom M
         const kategoriUnik = [...new Set(masterRows.map(r => r[KOLOM_FILTER]))].filter(k => k !== undefined && k !== "");
-        
         const dropdown = document.getElementById('filterDropdown');
         dropdown.innerHTML = ""; 
         
@@ -74,47 +141,60 @@
           dropdown.innerHTML += `<option value="${kat}">${kat}</option>`;
         });
 
-        // 3. Wajib Terpilih Tepat 1 Data Sejak Awal Dimuat
+        // 3. Aturan Kunci: Otomatis Tampilkan Pilihan Pertama Saat Halaman Dimuat
         if (kategoriUnik.length > 0) {
           dropdown.value = kategoriUnik[0]; 
           const dataAwal = masterRows.filter(r => r[KOLOM_FILTER] === kategoriUnik[0]);
-          tampilkanTabel(dataAwal);
+          distribusiTabel(dataAwal);
         } else {
-          tampilkanTabel([]);
+          distribusiTabel([]);
         }
 
-        // 4. Logika Filter Dropdown
+        // 4. Deteksi Perubahan Dropdown Filter
         dropdown.addEventListener('change', function() {
           const pilihan = this.value;
           const dataFilter = masterRows.filter(r => r[KOLOM_FILTER] === pilihan);
-          tampilkanTabel(dataFilter);
+          distribusiTabel(dataFilter);
         });
 
       } catch (error) {
-        document.getElementById('tableBody').innerHTML = `
-          <tr>
-            <td colspan="7" class="text-center py-10 text-red-500 font-bold">
-              ❌ Gagal memuat data: ${error.message}<br>
-              <span class="text-xs text-gray-400 font-normal">Periksa kembali apakah nama Sheet Anda sudah tepat ditulis "KEHADIRAN" (Huruf Kapital Semua).</span>
-            </td>
-          </tr>`;
+        alert("Terjadi Kendala: " + error.message);
       }
     }
 
-    function tampilkanTabel(dataBaris) {
-      const tbody = document.getElementById('tableBody');
+    // Fungsi pembuat elemen header tabel
+    function buatHeader(elementId, headers, indexRange) {
+      document.getElementById(elementId).innerHTML = indexRange
+        .map(idx => `<th class="py-2 px-4">${headers[idx] || '-'}</th>`)
+        .join('');
+    }
+
+    // Fungsi yang bertugas membagi-bagi baris data ke 4 tabel berbeda
+    function distribusiTabel(dataBaris) {
+      renderMasingMasingTabel('bodyA_E', dataBaris, RANGE_A_E);
+      renderMasingMasingTabel('bodyG_K', dataBaris, RANGE_G_K);
+      renderMasingMasingTabel('bodyM_N', dataBaris, RANGE_M_N);
+      renderMasingMasingTabel('bodyP_Q', dataBaris, RANGE_P_Q);
+    }
+
+    // Fungsi rendering baris isi tabel
+    function renderMasingMasingTabel(tbodyId, dataBaris, indexRange) {
+      const tbody = document.getElementById(tbodyId);
       if (dataBaris.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-400">Tidak ada data untuk pilihan ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${indexRange.length}" class="text-center py-6 text-gray-400">Tidak ada data</td></tr>`;
         return;
       }
       
       tbody.innerHTML = dataBaris.map(row => {
-        const columns = row.map(cell => `<td class="py-3 px-4">${cell}</td>`).join('');
+        const columns = indexRange.map(idx => {
+          const isiSel = row[idx] !== undefined && row[idx] !== null ? row[idx] : '';
+          return `<td class="py-2.5 px-4 truncate max-w-[150px]" title="${isiSel}">${isiSel}</td>`;
+        }).join('');
         return `<tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">${columns}</tr>`;
       }).join('');
     }
 
-    // Jalankan sistem
+    // Eksekusi program saat web diakses
     ambilData();
   </script>
 </body>
