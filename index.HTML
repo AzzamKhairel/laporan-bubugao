@@ -21,7 +21,6 @@
       <div class="flex items-center gap-2 bg-blue-800 p-2 rounded-xl border border-blue-700">
         <label class="text-sm font-semibold whitespace-nowrap">Filter Data:</label>
         <select id="filterDropdown" class="bg-white text-gray-800 rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer w-44">
-          <option value="SEMUA">✨ Tampilkan Semua</option>
           </select>
       </div>
     </div>
@@ -34,7 +33,7 @@
         </thead>
         <tbody id="tableBody" class="text-gray-700 text-sm divide-y divide-gray-100">
           <tr>
-            <td colspan="5" class="text-center py-10 text-gray-400 font-medium animate-pulse">⏳ Sedang memuat data dari Google Sheets...</td>
+            <td colspan="5" class="text-center py-10 text-gray-400 font-medium animate-pulse">⏳ Sedang menarik data dari Google Apps Script...</td>
           </tr>
         </tbody>
       </table>
@@ -42,69 +41,86 @@
   </div>
 
   <script>
-    // ⚠️ TEMPELKAN URL WEB APP GOOGLE APPS SCRIPT ANDA DI SINI
-    const API_URL = "https://script.google.com/macros/s/AKfycbyIXZ6M_UqmqgqQvodOaRA4SgfnpuPdOU9j9tzmfYiDbp7PA1OkNA5kGbbcQg_prLWw_A/exec"; 
+    // ⚠️ TEMPELKAN URL NEW DEPLOYMENT (WEB APP GAS) ANDA DI SINI
+    // Pastikan tetap menyertakan '?action=kehadiran' di ujung URL-nya
+    const API_URL = "https://script.google.com/macros/s/AKfycbyDgF_hL1r-N7wEsYg40Lv9jAkc9rNPG4id2hCgNCovvp1e35Sl6XrhsRp258GtcTo/exec"; 
     
-    let masterData = [];
+    // 💡 PENGATURAN KOLOM FILTER:
+    // Sesuaikan posisi kolom di sheet KEHADIRAN yang mau Anda jadikan opsi dropdown
+    // (0 = Kolom A, 1 = Kolom B, 2 = Kolom C, dst.)
+    const KOLOM_FILTER = 6; 
+
+    let masterRows = [];
 
     async function ambilData() {
       try {
         const response = await fetch(API_URL);
+        if (!response.ok) throw new Error("Koneksi ke Google Script gagal atau terblokir CORS");
+        
         const data = await response.json();
         
-        if (data.length === 0) return;
+        // Cek jika ada pesan error dari backend Google Script
+        if (data.error) throw new Error(data.error);
+        if (data.length === 0) throw new Error("Data di sheet KEHADIRAN kosong");
         
-        masterData = data;
-        const headers = data[0]; // Baris pertama sebagai judul kolom
-        const rows = data.slice(1);  // Sisa baris sebagai isi data
+        const headers = data[0]; 
+        masterRows = data.slice(1);  
         
-        // 1. Buat Header Tabel
-        const headerHtml = headers.map(h => `<th class="py-3 px-4">${h}</th>`).join('');
-        document.getElementById('tableHeader').innerHTML = headerHtml;
+        // 1. Buat Header Tabel Otomatis
+        document.getElementById('tableHeader').innerHTML = headers.map(h => `<th class="py-3 px-4">${h}</th>`).join('');
         
-        // 2. Buat Pilihan Dropdown Otomatis Berdasarkan Kolom Kedua (Misal: Status / Nama / Bagian)
-        // Anda bisa mengubah angka [1] di bawah ini sesuai kolom mana yang mau dijadikan filter (0 = kolom A, 1 = kolom B, dst)
-        const kategoriUnik = [...new Set(rows.map(r => r[1]))].filter(k => k !== "");
+        // 2. Ambil Data Unik untuk Dropdown (Berdasarkan KOLOM_FILTER)
+        const kategoriUnik = [...new Set(masterRows.map(r => r[KOLOM_FILTER]))].filter(k => k !== undefined && k !== "");
+        
         const dropdown = document.getElementById('filterDropdown');
+        dropdown.innerHTML = ""; // Bersihkan placeholder
+        
+        // Masukkan daftar pilihan unik ke dropdown (Sengaja tanpa opsi "SEMUA")
         kategoriUnik.forEach(kat => {
           dropdown.innerHTML += `<option value="${kat}">${kat}</option>`;
         });
 
-        // 3. Tampilkan Data Awal
-        tampilkanTabel(rows);
+        // 3. Jalankan Aturan: Wajib Terpilih Tepat 1 Data Sejak Awal Dimuat
+        if (kategoriUnik.length > 0) {
+          dropdown.value = kategoriUnik[0]; // Kunci otomatis ke data index pertama
+          const dataAwal = masterRows.filter(r => r[KOLOM_FILTER] === kategoriUnik[0]);
+          tampilkanTabel(dataAwal);
+        } else {
+          tampilkanTabel([]);
+        }
 
-        // 4. Jalankan Fungsi Efek Filter saat Dropdown Diubah
+        // 4. Logika Filter Dropdown Saat Dipilih (Single-Select)
         dropdown.addEventListener('change', function() {
           const pilihan = this.value;
-          if (pilihan === "SEMUA") {
-            tampilkanTabel(rows);
-          } else {
-            const dataFilter = rows.filter(r => r[1] === pilihan);
-            tampilkanTabel(dataFilter);
-          }
+          const dataFilter = masterRows.filter(r => r[KOLOM_FILTER] === pilihan);
+          tampilkanTabel(dataFilter);
         });
 
       } catch (error) {
-        document.getElementById('tableBody').innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500 font-bold">❌ Gagal memuat data: ${error.message}</td></tr>`;
+        document.getElementById('tableBody').innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center py-10 text-red-500 font-bold">
+              ❌ Gagal memuat data: ${error.message}<br>
+              <span class="text-xs text-gray-400 font-normal">Pastikan Web App di GAS sudah di-deploy ulang sebagai 'Anyone'.</span>
+            </td>
+          </tr>`;
       }
     }
 
     function tampilkanTabel(dataBaris) {
       const tbody = document.getElementById('tableBody');
       if (dataBaris.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-400">Tidak ada data yang cocok.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-400">Tidak ada data untuk pilihan ini.</td></tr>`;
         return;
       }
       
-      const html = dataBaris.map(row => {
-        const kolomHtml = row.map(cell => `<td class="py-3 px-4">${cell}</td>`).join('');
-        return `<tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">${kolomHtml}</tr>`;
+      tbody.innerHTML = dataBaris.map(row => {
+        const columns = row.map(cell => `<td class="py-3 px-4">${cell}</td>`).join('');
+        return `<tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">${columns}</tr>`;
       }).join('');
-      
-      tbody.innerHTML = html;
     }
 
-    // Jalankan pencarian data saat web dibuka
+    // Jalankan penarikan data saat web dibuka
     ambilData();
   </script>
 </body>
