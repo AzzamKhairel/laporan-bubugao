@@ -33,7 +33,7 @@
         </thead>
         <tbody id="tableBody" class="text-gray-700 text-sm divide-y divide-gray-100">
           <tr>
-            <td colspan="5" class="text-center py-10 text-gray-400 font-medium animate-pulse">⏳ Sedang menarik data dari Google Apps Script...</td>
+            <td colspan="7" class="text-center py-10 text-gray-400 font-medium animate-pulse">⏳ Sedang menarik data presensi...</td>
           </tr>
         </tbody>
       </table>
@@ -41,25 +41,20 @@
   </div>
 
   <script>
-    // ⚠️ TEMPELKAN URL NEW DEPLOYMENT (WEB APP GAS) ANDA DI SINI
-    // Pastikan tetap menyertakan '?action=kehadiran' di ujung URL-nya
-    const API_URL = "https://script.google.com/macros/s/AKfycbx2PBgvgwQ21LuIoOpx8VQcEi6GsycKi2JCvx0CBIDwqRqJK80xuY5eq_sdoAjWqDLk2Q/exec";
+    // 💡 URL Baru Anda + Pengaktif Fitur Keluarannya (?action=kehadiran)
+    const API_URL = "https://script.google.com/macros/s/AKfycbx2PBgvgwQ21LuIoOpx8VQcEi6GsycKi2JCvx0CBIDwqRqJK80xuY5eq_sdoAjWqDLk2Q/exec?action=kehadiran"; 
     
-    // 💡 PENGATURAN KOLOM FILTER:
-    // Sesuaikan posisi kolom di sheet KEHADIRAN yang mau Anda jadikan opsi dropdown
-    // (0 = Kolom A, 1 = Kolom B, 2 = Kolom C, dst.)
+    // Filter berdasarkan kolom ke-7 (Index 6 = Kolom G di Google Sheets Anda)
     const KOLOM_FILTER = 6; 
-
     let masterRows = [];
 
     async function ambilData() {
       try {
         const response = await fetch(API_URL);
-        if (!response.ok) throw new Error("Koneksi ke Google Script gagal atau terblokir CORS");
+        if (!response.ok) throw new Error("Koneksi gagal atau terblokir kebijakan Google");
         
         const data = await response.json();
         
-        // Cek jika ada pesan error dari backend Google Script
         if (data.error) throw new Error(data.error);
         if (data.length === 0) throw new Error("Data di sheet KEHADIRAN kosong");
         
@@ -69,27 +64,26 @@
         // 1. Buat Header Tabel Otomatis
         document.getElementById('tableHeader').innerHTML = headers.map(h => `<th class="py-3 px-4">${h}</th>`).join('');
         
-        // 2. Ambil Data Unik untuk Dropdown (Berdasarkan KOLOM_FILTER)
+        // 2. Ambil Data Unik untuk Dropdown
         const kategoriUnik = [...new Set(masterRows.map(r => r[KOLOM_FILTER]))].filter(k => k !== undefined && k !== "");
         
         const dropdown = document.getElementById('filterDropdown');
-        dropdown.innerHTML = ""; // Bersihkan placeholder
+        dropdown.innerHTML = ""; 
         
-        // Masukkan daftar pilihan unik ke dropdown (Sengaja tanpa opsi "SEMUA")
         kategoriUnik.forEach(kat => {
           dropdown.innerHTML += `<option value="${kat}">${kat}</option>`;
         });
 
-        // 3. Jalankan Aturan: Wajib Terpilih Tepat 1 Data Sejak Awal Dimuat
+        // 3. Wajib Terpilih Tepat 1 Data Sejak Awal Dimuat
         if (kategoriUnik.length > 0) {
-          dropdown.value = kategoriUnik[0]; // Kunci otomatis ke data index pertama
+          dropdown.value = kategoriUnik[0]; 
           const dataAwal = masterRows.filter(r => r[KOLOM_FILTER] === kategoriUnik[0]);
           tampilkanTabel(dataAwal);
         } else {
           tampilkanTabel([]);
         }
 
-        // 4. Logika Filter Dropdown Saat Dipilih (Single-Select)
+        // 4. Logika Filter Dropdown
         dropdown.addEventListener('change', function() {
           const pilihan = this.value;
           const dataFilter = masterRows.filter(r => r[KOLOM_FILTER] === pilihan);
@@ -99,9 +93,9 @@
       } catch (error) {
         document.getElementById('tableBody').innerHTML = `
           <tr>
-            <td colspan="5" class="text-center py-10 text-red-500 font-bold">
+            <td colspan="7" class="text-center py-10 text-red-500 font-bold">
               ❌ Gagal memuat data: ${error.message}<br>
-              <span class="text-xs text-gray-400 font-normal">Pastikan Web App di GAS sudah di-deploy ulang sebagai 'Anyone'.</span>
+              <span class="text-xs text-gray-400 font-normal">Periksa kembali apakah nama Sheet Anda sudah tepat ditulis "KEHADIRAN" (Huruf Kapital Semua).</span>
             </td>
           </tr>`;
       }
@@ -110,7 +104,7 @@
     function tampilkanTabel(dataBaris) {
       const tbody = document.getElementById('tableBody');
       if (dataBaris.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-400">Tidak ada data untuk pilihan ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-400">Tidak ada data untuk pilihan ini.</td></tr>`;
         return;
       }
       
@@ -120,7 +114,7 @@
       }).join('');
     }
 
-    // Jalankan penarikan data saat web dibuka
+    // Jalankan sistem
     ambilData();
   </script>
 </body>
