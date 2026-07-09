@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Laporan Realtime</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style> body { background-color: #f3f4f6; } </style>
+</head>
+<body class="p-4 md:p-8">
+
+  <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div class="bg-blue-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-wide">📋 LAPORAN UTAMA (REAL-TIME)</h1>
+        <p class="text-blue-200 text-sm mt-1">Sumber data: LOG_HISTORY (Kolom F - J)</p>
+      </div>
+      
+      <div class="flex items-center gap-2 bg-blue-800 p-2 rounded-xl border border-blue-700">
+        <label class="text-sm font-semibold whitespace-nowrap">Filter Kolom F:</label>
+        <select id="filterDropdown" class="bg-white text-gray-800 rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer w-44">
+          <option>Memuat...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto p-6">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr id="tableHeader" class="border-b-2 border-gray-200 text-gray-600 text-sm font-bold uppercase tracking-wider"></tr>
+        </thead>
+        <tbody id="tableBody" class="text-gray-700 text-sm divide-y divide-gray-100">
+          <tr>
+            <td class="text-center py-10 text-gray-400 font-medium animate-pulse">⏳ Menarik data laporan...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbx2PBgvgwQ21LuIoOpx8VQcEi6GsycKi2JCvx0CBIDwqRqJK80xuY5eq_sdoAjWqDLk2Q/exec?action=laporan"; 
+
+    let masterRows = [];
+
+    async function ambilData() {
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+        
+        const headers = data[0]; 
+        masterRows = data.slice(1);  
+        
+        // Buat nama-nama judul kolom
+        document.getElementById('tableHeader').innerHTML = headers.map(h => `<th class="py-3 px-4">${h}</th>`).join('');
+        
+        // Ambil data unik dari Kolom F (Index ke-0 setelah dipotong backend)
+        const kategoriUnik = [...new Set(masterRows.map(r => r[0]))].filter(k => k !== undefined && k !== "");
+        const dropdown = document.getElementById('filterDropdown');
+        dropdown.innerHTML = ""; 
+        
+        kategoriUnik.forEach(kat => {
+          dropdown.innerHTML += `<option value="${kat}">${kat}</option>`;
+        });
+
+        // Wajib pilih 1 data di awal tanpa menu 'SEMUA'
+        if (kategoriUnik.length > 0) {
+          dropdown.value = kategoriUnik[0]; 
+          tampilkanTabel(masterRows.filter(r => r[0] === kategoriUnik[0]));
+        } else {
+          tampilkanTabel([]);
+        }
+
+        // Jalankan filter saat opsi dropdown dipindah
+        dropdown.addEventListener('change', function() {
+          tampilkanTabel(masterRows.filter(r => r[0] === this.value));
+        });
+
+      } catch (error) {
+        document.getElementById('tableBody').innerHTML = `<tr><td class="text-center py-10 text-red-500 font-bold">❌ Gagal memuat data: ${error.message}</td></tr>`;
+      }
+    }
+
+    function tampilkanTabel(dataBaris) {
+      const tbody = document.getElementById('tableBody');
+      if (dataBaris.length === 0) {
+        tbody.innerHTML = `<tr><td class="text-center py-10 text-gray-400">Tidak ada data untuk pilihan ini.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = dataBaris.map(row => {
+        return `<tr class="hover:bg-gray-50 border-b border-gray-100">${row.map(cell => `<td class="py-3 px-4">${cell}</td>`).join('')}</tr>`;
+      }).join('');
+    }
+
+    ambilData();
+  </script>
+</body>
+</html>
