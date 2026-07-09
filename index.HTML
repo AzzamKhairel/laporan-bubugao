@@ -3,55 +3,109 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Display Data Presensi</title>
+  <title>Dashboard Monitoring Premium</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body, html {
-      width: 100%;
-      height: 100%;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background-color: #f4f6f9;
-      overflow: hidden; /* Mencegah double scrollbar di browser */
-    }
-    .wrapper {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      height: 100%;
-    }
-    .header {
-      background-color: #004b87;
-      color: white;
-      padding: 15px 20px;
-      font-weight: bold;
-      font-size: 18px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .sheet-container {
-      flex: 1; /* Memaksa container memenuhi sisa layar */
-      width: 100%;
-      height: 100%;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
+    body { background-color: #f3f4f6; }
   </style>
 </head>
-<body>
+<body class="p-4 md:p-8">
 
-  <div class="wrapper">
-    <div class="header">
-      📊 MONITORING DATA PRESENSI BUBUGAO
+  <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div class="bg-blue-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-wide">📊 MONITORING DATA PRESENSI</h1>
+        <p class="text-blue-200 text-sm mt-1">Sistem Laporan Real-Time Bubugao</p>
+      </div>
+      
+      <div class="flex items-center gap-2 bg-blue-800 p-2 rounded-xl border border-blue-700">
+        <label class="text-sm font-semibold whitespace-nowrap">Filter Data:</label>
+        <select id="filterDropdown" class="bg-white text-gray-800 rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer w-44">
+          <option value="SEMUA">✨ Tampilkan Semua</option>
+          </select>
+      </div>
     </div>
 
-    <div class="sheet-container">
-      
-      <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQu9NudbOoCRLpiLFdXkFjxHoogk8ednh9b1R8YQFIob9Xiuix5otoU6iFTcQQ43R2NFhSvr_wIuAEb/pubhtml?gid=1438255861&amp;single=true&amp;widget=true&amp;headers=false"></iframe>
-      
+    <div class="overflow-x-auto p-6">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr id="tableHeader" class="border-b-2 border-gray-200 text-gray-600 text-sm font-bold uppercase tracking-wider">
+            </tr>
+        </thead>
+        <tbody id="tableBody" class="text-gray-700 text-sm divide-y divide-gray-100">
+          <tr>
+            <td colspan="5" class="text-center py-10 text-gray-400 font-medium animate-pulse">⏳ Sedang memuat data dari Google Sheets...</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
+  <script>
+    // ⚠️ TEMPELKAN URL WEB APP GOOGLE APPS SCRIPT ANDA DI SINI
+    const API_URL = "https://script.google.com/macros/s/AKfycbyIXZ6M_UqmqgqQvodOaRA4SgfnpuPdOU9j9tzmfYiDbp7PA1OkNA5kGbbcQg_prLWw_A/exec"; 
+    
+    let masterData = [];
+
+    async function ambilData() {
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        
+        if (data.length === 0) return;
+        
+        masterData = data;
+        const headers = data[0]; // Baris pertama sebagai judul kolom
+        const rows = data.slice(1);  // Sisa baris sebagai isi data
+        
+        // 1. Buat Header Tabel
+        const headerHtml = headers.map(h => `<th class="py-3 px-4">${h}</th>`).join('');
+        document.getElementById('tableHeader').innerHTML = headerHtml;
+        
+        // 2. Buat Pilihan Dropdown Otomatis Berdasarkan Kolom Kedua (Misal: Status / Nama / Bagian)
+        // Anda bisa mengubah angka [1] di bawah ini sesuai kolom mana yang mau dijadikan filter (0 = kolom A, 1 = kolom B, dst)
+        const kategoriUnik = [...new Set(rows.map(r => r[1]))].filter(k => k !== "");
+        const dropdown = document.getElementById('filterDropdown');
+        kategoriUnik.forEach(kat => {
+          dropdown.innerHTML += `<option value="${kat}">${kat}</option>`;
+        });
+
+        // 3. Tampilkan Data Awal
+        tampilkanTabel(rows);
+
+        // 4. Jalankan Fungsi Efek Filter saat Dropdown Diubah
+        dropdown.addEventListener('change', function() {
+          const pilihan = this.value;
+          if (pilihan === "SEMUA") {
+            tampilkanTabel(rows);
+          } else {
+            const dataFilter = rows.filter(r => r[1] === pilihan);
+            tampilkanTabel(dataFilter);
+          }
+        });
+
+      } catch (error) {
+        document.getElementById('tableBody').innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500 font-bold">❌ Gagal memuat data: ${error.message}</td></tr>`;
+      }
+    }
+
+    function tampilkanTabel(dataBaris) {
+      const tbody = document.getElementById('tableBody');
+      if (dataBaris.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-400">Tidak ada data yang cocok.</td></tr>`;
+        return;
+      }
+      
+      const html = dataBaris.map(row => {
+        const kolomHtml = row.map(cell => `<td class="py-3 px-4">${cell}</td>`).join('');
+        return `<tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">${kolomHtml}</tr>`;
+      }).join('');
+      
+      tbody.innerHTML = html;
+    }
+
+    // Jalankan pencarian data saat web dibuka
+    ambilData();
+  </script>
 </body>
 </html>
