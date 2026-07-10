@@ -10,20 +10,30 @@
 <body class="p-4 md:p-8">
 
   <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+    <!-- Header -->
     <div class="bg-blue-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-wide">📋 LAPORAN UTAMA </h1>
-        <p class="text-blue-200 text-sm mt-1">Presensi BU BU GAO  • <span class="text-emerald-400 font-semibold animate-pulse">● Auto-Refresh Aktif</span></p>
+        <h1 class="text-2xl font-bold tracking-wide">📋 LAPORAN UTAMA</h1>
+        <p class="text-blue-200 text-sm mt-1">Presensi BU BU GAO • <span class="text-emerald-400 font-semibold animate-pulse">● Auto-Refresh Aktif</span></p>
       </div>
       
-      <div class="flex items-center gap-2 bg-blue-800 p-2 rounded-xl border border-blue-700">
-        <label class="text-sm font-semibold whitespace-nowrap">Filter Kolom F:</label>
-        <select id="filterDropdown" class="bg-white text-gray-800 rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer w-44">
-          <option>Memuat...</option>
-        </select>
+      <!-- Filter & Fitur Tarik Data -->
+      <div class="flex flex-wrap items-center gap-3 bg-blue-800 p-2 rounded-xl border border-blue-700">
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-semibold whitespace-nowrap">Filter Kolom F:</label>
+          <select id="filterDropdown" class="bg-white text-gray-800 rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer w-44">
+            <option>Memuat...</option>
+          </select>
+        </div>
+        
+        <!-- Tombol Tarik Data Hasil Filter -->
+        <button id="downloadBtn" onclick="tarikDataHasilFilter()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer">
+          📥 Tarik Data
+        </button>
       </div>
     </div>
 
+    <!-- Tabel Laporan -->
     <div class="overflow-x-auto p-6">
       <table class="w-full text-left border-collapse">
         <thead>
@@ -41,42 +51,46 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbx2PBgvgwQ21LuIoOpx8VQcEi6GsycKi2JCvx0CBIDwqRqJK80xuY5eq_sdoAjWqDLk2Q/exec?action=laporan"; 
     
-    // Waktu tunggu refresh otomatis (5000 milidetik = 5 detik)
-    const REFRESH_INTERVAL = 5000; 
+    // Waktu tunggu refresh otomatis (10000 milidetik = 10 detik)
+    const REFRESH_INTERVAL = 10000; 
 
     let masterRows = [];
+    let currentHeaders = [];
 
-    // Ditambahkan parameter 'isInitial' untuk membedakan loading pertama kali vs refresh berkala
     async function ambilData(isInitial = false) {
       try {
         const dropdown = document.getElementById('filterDropdown');
-        // 💡 KUNCI UTAMA: Simpan nilai yang sedang dipilih user sebelum data ditarik ulang
+        // Kunci nilai lama sebelum fetch data baru dilakukan
         const nilaiTerpilihSebelumnya = dropdown.value;
 
         const response = await fetch(API_URL);
         const data = await response.json();
         if (data.error) throw new Error(data.error);
         
-        const headers = data[0]; 
+        currentHeaders = data[0]; 
         masterRows = data.slice(1);  
         
-        // Buat nama-nama judul kolom
-        document.getElementById('tableHeader').innerHTML = headers.map(h => `<th class="py-3 px-4">${h}</th>`).join('');
+        // Render nama judul kolom ke tabel
+        document.getElementById('tableHeader').innerHTML = currentHeaders.map(h => `<th class="py-3 px-4">${h}</th>`).join('');
         
-        // Ambil data unik dari Kolom F (Index ke-0 setelah dipotong backend)
+        // Ambil list kategori unik terbaru dari Kolom F
         const kategoriUnik = [...new Set(masterRows.map(r => r[0]))].filter(k => k !== undefined && k !== "");
         
-        // Bangun ulang opsi dropdown
-        dropdown.innerHTML = ""; 
-        kategoriUnik.forEach(kat => {
-          dropdown.innerHTML += `<option value="${kat}">${kat}</option>`;
-        });
+        // Dapatkan list opsi yang saat ini ada di element HTML dropdown
+        const opsiSaatIni = Array.from(dropdown.options).map(o => o.value);
+        
+        // Cek apakah struktur list kategorinya berubah atau tidak
+        const apakahSama = kategoriUnik.length === opsiSaatIni.length && kategoriUnik.every((v, i) => v === opsiSaatIni[i]);
 
-        // Logika penentuan filter aktif setelah data diperbarui
+        // 💡 PERBAIKAN UTAMA: Hanya rombak HTML dropdown jika list kategorinya benar-benar berubah/ada data baru
+        if (!apakahSama) {
+          dropdown.innerHTML = kategoriUnik.map(kat => `<option value="${kat}">${kat}</option>`).join('');
+        }
+
+        // Tentukan baris mana yang harus dikunci dan ditampilkan ke layar
         if (kategoriUnik.length > 0) {
-          // Jika opsi yang lama masih ada di data baru dan ini bukan loading awal, kunci posisi dropdown
-          if (kategoriUnik.includes(nilaiTerpilihSebelumnya) && !isInitial) {
-            dropdown.value = nilaiTerpilihSebelumnya;
+          if (kategoriUnik.includes(nilaiTerpilihSebelumnya)) {
+            dropdown.value = nilaiTerpilihSebelumnya; // Kunci posisi pilihan user sebelumnya
           } else {
             dropdown.value = kategoriUnik[0];
           }
@@ -87,7 +101,6 @@
 
       } catch (error) {
         console.error("Gagal memperbarui data:", error.message);
-        // Hanya tampilkan pesan error besar di layar jika gagal pada saat pertama kali web dibuka
         if (isInitial) {
           document.getElementById('tableBody').innerHTML = `<tr><td class="text-center py-10 text-red-500 font-bold">❌ Gagal memuat data: ${error.message}</td></tr>`;
         }
@@ -105,17 +118,50 @@
       }).join('');
     }
 
-    // Jalankan penangkap event perpindahan dropdown (Cukup diinisialisasi 1x di luar fungsi)
+    // 📥 FUNGSI TARIK DATA (DOWNLOAD CSV HASIL DROPDOWN)
+    function tarikDataHasilFilter() {
+      const dropdown = document.getElementById('filterDropdown');
+      const filterAktif = dropdown.value;
+      
+      if (!filterAktif || masterRows.length === 0) {
+        alert("Data belum siap atau tidak tersedia untuk diunduh!");
+        return;
+      }
+
+      // Ambil data yang hanya sesuai dengan filter dropdown saat ini
+      const dataDisaring = masterRows.filter(r => r[0] === filterAktif);
+      
+      // Buat struktur isi file CSV (Header + Data Baris)
+      const kontenCSV = [currentHeaders, ...dataDisaring]
+        .map(baris => baris.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+
+      // Gunakan BOM (\uFEFF) agar terbaca rapi saat dibuka langsung di Microsoft Excel
+      const blob = new Blob(["\uFEFF" + kontenCSV], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      // Proses download otomatis via browser
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      // Nama file dinamis mengikuti nama filter di dropdown
+      link.setAttribute("download", `Laporan_${filterAktif.replace(/[^a-zA-Z0-9]/g, "_")}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Jalankan penangkap event perpindahan dropdown
     document.getElementById('filterDropdown').addEventListener('change', function() {
       tampilkanTabel(masterRows.filter(r => r[0] === this.value));
     });
 
-    // Panggilan pertama saat halaman web baru dibuka
+    // Panggilan pertama saat halaman dibuka
     ambilData(true);
 
-    // 🔄 SISTEM AUTO REFRESH BERKALA
+    // Jalankan sinkronisasi data otomatis di latar belakang tanpa mengganggu kenyamanan user
     setInterval(() => {
-      ambilData(false); // Ambil data di latar belakang tanpa merusak kenyamanan klik user
+      ambilData(false);
     }, REFRESH_INTERVAL);
   </script>
 </body>
