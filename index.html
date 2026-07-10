@@ -14,7 +14,12 @@
     <div class="bg-blue-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
       <div>
         <h1 class="text-2xl font-bold tracking-wide">📋 LAPORAN UTAMA</h1>
-        <p class="text-blue-200 text-sm mt-1">Presensi BU BU GAO • <span class="text-emerald-400 font-semibold animate-pulse">● Auto-Refresh Aktif</span></p>
+        <p class="text-blue-200 text-sm mt-1">
+          Presensi BU BU GAO • 
+          <span class="text-emerald-400 font-semibold animate-pulse">● Auto-Refresh Aktif</span>
+          <!-- 💡 INDIKATOR VISUAL: Jam ini akan terus berdetak setiap kali data berhasil di-refresh -->
+          <span id="refreshTime" class="block text-xs text-blue-300 mt-0.5 font-mono">Menghubungkan ke server...</span>
+        </p>
       </div>
       
       <!-- Filter & Fitur Tarik Data -->
@@ -51,19 +56,20 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbx2PBgvgwQ21LuIoOpx8VQcEi6GsycKi2JCvx0CBIDwqRqJK80xuY5eq_sdoAjWqDLk2Q/exec?action=laporan"; 
     
-    // Waktu tunggu refresh otomatis (10000 milidetik = 10 detik)
+    // Jeda waktu refresh otomatis (10000 milidetik = 10 detik)
     const REFRESH_INTERVAL = 10000; 
 
     let masterRows = [];
     let currentHeaders = [];
+    let filterTerpilih = ""; // Variabel global untuk mengunci pilihan user agar tidak ter-reset
 
     async function ambilData(isInitial = false) {
       try {
-        const dropdown = document.getElementById('filterDropdown');
-        // Kunci nilai lama sebelum fetch data baru dilakukan
-        const nilaiTerpilihSebelumnya = dropdown.value;
+        // 💡 PERBAIKAN 1: Tambahkan Cache-Buster menggunakan timestamp dinamis (?_t=angka) 
+        // Ini memaksa browser untuk selalu meminta data paling baru dari server Google Sheets
+        const urlDenganAntiCache = API_URL + "&_t=" + Date.now();
 
-        const response = await fetch(API_URL);
+        const response = await fetch(urlDenganAntiCache);
         const data = await response.json();
         if (data.error) throw new Error(data.error);
         
@@ -76,31 +82,39 @@
         // Ambil list kategori unik terbaru dari Kolom F
         const kategoriUnik = [...new Set(masterRows.map(r => r[0]))].filter(k => k !== undefined && k !== "");
         
-        // Dapatkan list opsi yang saat ini ada di element HTML dropdown
-        const opsiSaatIni = Array.from(dropdown.options).map(o => o.value);
+        const dropdown = document.getElementById('filterDropdown');
         
-        // Cek apakah struktur list kategorinya berubah atau tidak
-        const apakahSama = kategoriUnik.length === opsiSaatIni.length && kategoriUnik.every((v, i) => v === opsiSaatIni[i]);
-
-        // 💡 PERBAIKAN UTAMA: Hanya rombak HTML dropdown jika list kategorinya benar-benar berubah/ada data baru
-        if (!apakahSama) {
-          dropdown.innerHTML = kategoriUnik.map(kat => `<option value="${kat}">${kat}</option>`).join('');
+        // Jika web baru pertama kali dibuka, default-kan ke kategori pertama
+        if (isInitial && kategoriUnik.length > 0) {
+          filterTerpilih = kategoriUnik[0];
         }
 
-        // Tentukan baris mana yang harus dikunci dan ditampilkan ke layar
+        // Susun ulang HTML opsi dropdown secara bersih
+        dropdown.innerHTML = kategoriUnik.map(kat => `<option value="${kat}">${kat}</option>`).join('');
+
+        // 💡 PERBAIKAN 2: Sistem pengunci filter absolut
         if (kategoriUnik.length > 0) {
-          if (kategoriUnik.includes(nilaiTerpilihSebelumnya)) {
-            dropdown.value = nilaiTerpilihSebelumnya; // Kunci posisi pilihan user sebelumnya
+          if (kategoriUnik.includes(filterTerpilih)) {
+            dropdown.value = filterTerpilih; // Kunci pilihan user yang lama
           } else {
-            dropdown.value = kategoriUnik[0];
+            filterTerpilih = kategoriUnik[0];
+            dropdown.value = filterTerpilih;
           }
-          tampilkanTabel(masterRows.filter(r => r[0] === dropdown.value));
+          tampilkanTabel(masterRows.filter(r => r[0] === filterTerpilih));
         } else {
           tampilkanTabel([]);
         }
 
+        // 💡 PERBAIKAN 3: Update waktu refresh aktual di layar monitor agar terpantau aktif
+        const skrg = new Date();
+        const jam = String(skrg.getHours()).padStart(2, '0');
+        const menit = String(skrg.getMinutes()).padStart(2, '0');
+        const detik = String(skrg.getSeconds()).padStart(2, '0');
+        document.getElementById('refreshTime').innerText = `Terakhir diperbarui: Pukul ${jam}:${menit}:${detik} WIB`;
+
       } catch (error) {
         console.error("Gagal memperbarui data:", error.message);
+        document.getElementById('refreshTime').innerText = `⚠️ Koneksi terputus, mencoba ulang...`;
         if (isInitial) {
           document.getElementById('tableBody').innerHTML = `<tr><td class="text-center py-10 text-red-500 font-bold">❌ Gagal memuat data: ${error.message}</td></tr>`;
         }
@@ -120,49 +134,48 @@
 
     // 📥 FUNGSI TARIK DATA (DOWNLOAD CSV HASIL DROPDOWN)
     function tarikDataHasilFilter() {
-      const dropdown = document.getElementById('filterDropdown');
-      const filterAktif = dropdown.value;
-      
-      if (!filterAktif || masterRows.length === 0) {
+      if (!filterTerpilih || masterRows.length === 0) {
         alert("Data belum siap atau tidak tersedia untuk diunduh!");
         return;
       }
 
-      // Ambil data yang hanya sesuai dengan filter dropdown saat ini
-      const dataDisaring = masterRows.filter(r => r[0] === filterAktif);
-      
-      // Buat struktur isi file CSV (Header + Data Baris)
+      const dataDisaring = masterRows.filter(r => r[0] === filterTerpilih);
       const kontenCSV = [currentHeaders, ...dataDisaring]
         .map(baris => baris.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(","))
         .join("\n");
 
-      // Gunakan BOM (\uFEFF) agar terbaca rapi saat dibuka langsung di Microsoft Excel
       const blob = new Blob(["\uFEFF" + kontenCSV], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       
-      // Proses download otomatis via browser
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      // Nama file dinamis mengikuti nama filter di dropdown
-      link.setAttribute("download", `Laporan_${filterAktif.replace(/[^a-zA-Z0-9]/g, "_")}.csv`);
+      link.setAttribute("download", `Laporan_${filterTerpilih.replace(/[^a-zA-Z0-9]/g, "_")}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
-    // Jalankan penangkap event perpindahan dropdown
+    // Tangkap perubahan ketika user sengaja mengklik dropdown
     document.getElementById('filterDropdown').addEventListener('change', function() {
-      tampilkanTabel(masterRows.filter(r => r[0] === this.value));
+      filterTerpilih = this.value; // Amankan opsi pilihan baru ke variabel global
+      tampilkanTabel(masterRows.filter(r => r[0] === filterTerpilih));
     });
 
-    // Panggilan pertama saat halaman dibuka
+    // Panggilan pertama saat halaman dibuka pertama kali
     ambilData(true);
 
-    // Jalankan sinkronisasi data otomatis di latar belakang tanpa mengganggu kenyamanan user
-    setInterval(() => {
-      ambilData(false);
-    }, REFRESH_INTERVAL);
+    // 💡 PERBAIKAN 4: Menggunakan Antrean Timeout Berantai (Lebih aman dari setInterval)
+    // Fungsi ini akan menjamin request berikutnya dikirim 10 detik SETELAH request sebelumnya sukses didownload.
+    function mulaiSiklusAutoRefresh() {
+      setTimeout(async () => {
+        await ambilData(false); 
+        mulaiSiklusAutoRefresh(); // Panggil dirinya sendiri untuk membuat loop abadi yang sehat
+      }, REFRESH_INTERVAL);
+    }
+
+    // Aktifkan siklus loop otomatis
+    mulaiSiklusAutoRefresh();
   </script>
 </body>
 </html>
