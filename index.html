@@ -12,8 +12,8 @@
   <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
     <div class="bg-blue-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-wide">📋 LAPORAN UTAMA (REAL-TIME)</h1>
-        <p class="text-blue-200 text-sm mt-1">Sumber data: LOG_HISTORY (Kolom F - J)</p>
+        <h1 class="text-2xl font-bold tracking-wide">📋 LAPORAN UTAMA </h1>
+        <p class="text-blue-200 text-sm mt-1">Presensi BU BU GAO  • <span class="text-emerald-400 font-semibold animate-pulse">● Auto-Refresh Aktif</span></p>
       </div>
       
       <div class="flex items-center gap-2 bg-blue-800 p-2 rounded-xl border border-blue-700">
@@ -40,11 +40,19 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbx2PBgvgwQ21LuIoOpx8VQcEi6GsycKi2JCvx0CBIDwqRqJK80xuY5eq_sdoAjWqDLk2Q/exec?action=laporan"; 
+    
+    // Waktu tunggu refresh otomatis (5000 milidetik = 5 detik)
+    const REFRESH_INTERVAL = 5000; 
 
     let masterRows = [];
 
-    async function ambilData() {
+    // Ditambahkan parameter 'isInitial' untuk membedakan loading pertama kali vs refresh berkala
+    async function ambilData(isInitial = false) {
       try {
+        const dropdown = document.getElementById('filterDropdown');
+        // 💡 KUNCI UTAMA: Simpan nilai yang sedang dipilih user sebelum data ditarik ulang
+        const nilaiTerpilihSebelumnya = dropdown.value;
+
         const response = await fetch(API_URL);
         const data = await response.json();
         if (data.error) throw new Error(data.error);
@@ -57,28 +65,32 @@
         
         // Ambil data unik dari Kolom F (Index ke-0 setelah dipotong backend)
         const kategoriUnik = [...new Set(masterRows.map(r => r[0]))].filter(k => k !== undefined && k !== "");
-        const dropdown = document.getElementById('filterDropdown');
-        dropdown.innerHTML = ""; 
         
+        // Bangun ulang opsi dropdown
+        dropdown.innerHTML = ""; 
         kategoriUnik.forEach(kat => {
           dropdown.innerHTML += `<option value="${kat}">${kat}</option>`;
         });
 
-        // Wajib pilih 1 data di awal tanpa menu 'SEMUA'
+        // Logika penentuan filter aktif setelah data diperbarui
         if (kategoriUnik.length > 0) {
-          dropdown.value = kategoriUnik[0]; 
-          tampilkanTabel(masterRows.filter(r => r[0] === kategoriUnik[0]));
+          // Jika opsi yang lama masih ada di data baru dan ini bukan loading awal, kunci posisi dropdown
+          if (kategoriUnik.includes(nilaiTerpilihSebelumnya) && !isInitial) {
+            dropdown.value = nilaiTerpilihSebelumnya;
+          } else {
+            dropdown.value = kategoriUnik[0];
+          }
+          tampilkanTabel(masterRows.filter(r => r[0] === dropdown.value));
         } else {
           tampilkanTabel([]);
         }
 
-        // Jalankan filter saat opsi dropdown dipindah
-        dropdown.addEventListener('change', function() {
-          tampilkanTabel(masterRows.filter(r => r[0] === this.value));
-        });
-
       } catch (error) {
-        document.getElementById('tableBody').innerHTML = `<tr><td class="text-center py-10 text-red-500 font-bold">❌ Gagal memuat data: ${error.message}</td></tr>`;
+        console.error("Gagal memperbarui data:", error.message);
+        // Hanya tampilkan pesan error besar di layar jika gagal pada saat pertama kali web dibuka
+        if (isInitial) {
+          document.getElementById('tableBody').innerHTML = `<tr><td class="text-center py-10 text-red-500 font-bold">❌ Gagal memuat data: ${error.message}</td></tr>`;
+        }
       }
     }
 
@@ -93,7 +105,18 @@
       }).join('');
     }
 
-    ambilData();
+    // Jalankan penangkap event perpindahan dropdown (Cukup diinisialisasi 1x di luar fungsi)
+    document.getElementById('filterDropdown').addEventListener('change', function() {
+      tampilkanTabel(masterRows.filter(r => r[0] === this.value));
+    });
+
+    // Panggilan pertama saat halaman web baru dibuka
+    ambilData(true);
+
+    // 🔄 SISTEM AUTO REFRESH BERKALA
+    setInterval(() => {
+      ambilData(false); // Ambil data di latar belakang tanpa merusak kenyamanan klik user
+    }, REFRESH_INTERVAL);
   </script>
 </body>
 </html>
