@@ -3,145 +3,222 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web Laporan Realtime</title>
+  <title>Laporan Real-Time Presensi - LOG HISTORY</title>
+  
+  <!-- Tailwind CSS v4 Play CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <style> body { background-color: #f3f4f6; } </style>
+  
+  <style>
+    body { background-color: #f3f4f6; }
+  </style>
 </head>
 <body class="p-4 md:p-8">
 
   <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-    <!-- Header -->
+    
+    <!-- HEADER & STATUS -->
     <div class="bg-blue-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-wide">📋 LAPORAN UTAMA</h1>
-        <p class="text-blue-200 text-sm mt-1">
-          Presensi BU BU GAO • 
-          <span class="text-emerald-400 font-semibold animate-pulse">● Auto-Refresh Aktif</span>
-          <!-- 💡 INDIKATOR VISUAL: Jam ini akan terus berdetak setiap kali data berhasil di-refresh -->
-          <span id="refreshTime" class="block text-xs text-blue-300 mt-0.5 font-mono">Menghubungkan ke server...</span>
+        <h1 class="text-2xl font-bold tracking-wide">📋 LAPORAN LOG HISTORY PRESENSI</h1>
+        <p class="text-blue-200 text-sm mt-1 flex items-center gap-2">
+          <span>Bubugao x BTN</span> • 
+          <span class="text-emerald-400 font-semibold animate-pulse">● Live Sync</span>
+          <span id="refreshTime" class="text-xs text-blue-300 font-mono ml-2">Menghubungkan ke server...</span>
         </p>
       </div>
       
-      <!-- Filter & Fitur Tarik Data -->
-      <div class="flex flex-wrap items-center gap-3 bg-blue-800 p-2 rounded-xl border border-blue-700">
+      <!-- FITUR FILTER & DOWNLOAD -->
+      <div class="flex flex-wrap items-center gap-3 bg-blue-800 p-2.5 rounded-xl border border-blue-700 shadow-inner">
+        <!-- Filter Tanggal -->
         <div class="flex items-center gap-2">
-          <label class="text-sm font-semibold whitespace-nowrap">Filter Kolom F:</label>
-          <select id="filterDropdown" class="bg-white text-gray-800 rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer w-44">
-            <option>Memuat...</option>
+          <label for="filterDropdown" class="text-sm font-semibold whitespace-nowrap">Tanggal:</label>
+          <select id="filterDropdown" class="bg-white text-gray-800 rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer min-w-[150px]">
+            <option value="ALL">Memuat...</option>
           </select>
         </div>
         
-        <!-- Tombol Tarik Data Hasil Filter -->
-        <button id="downloadBtn" onclick="tarikDataHasilFilter()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer">
-          📥 Tarik Data
+        <!-- Tombol Download CSV -->
+        <button id="downloadBtn" onclick="tarikDataHasilFilter()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer active:scale-95">
+          📥 Export CSV
+        </button>
+
+        <!-- Tombol Refresh Manual -->
+        <button onclick="ambilData()" class="bg-blue-700 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold transition-all shadow-md cursor-pointer active:scale-95">
+          🔄 Refresh
         </button>
       </div>
     </div>
 
-    <!-- Tabel Laporan -->
+    <!-- MAIN TABLE SECTION -->
     <div class="overflow-x-auto p-6">
+      <div class="flex justify-between items-center mb-3 text-xs font-semibold text-gray-500">
+        <span id="totalDataBadge">Total Data: 0 Baris</span>
+        <span>Urutan: Terbaru di atas</span>
+      </div>
+
       <table class="w-full text-left border-collapse">
         <thead>
-          <tr id="tableHeader" class="border-b-2 border-gray-200 text-gray-600 text-sm font-bold uppercase tracking-wider"></tr>
+          <tr id="tableHeader" class="border-b-2 border-gray-200 text-gray-700 text-sm font-bold uppercase tracking-wider bg-gray-50">
+            <th class="py-3 px-4">Tanggal</th>
+            <th class="py-3 px-4">Waktu</th>
+            <th class="py-3 px-4">Data Barcode</th>
+            <th class="py-3 px-4 text-center">Foto Bukti</th>
+          </tr>
         </thead>
         <tbody id="tableBody" class="text-gray-700 text-sm divide-y divide-gray-100">
           <tr>
-            <td class="text-center py-10 text-gray-400 font-medium animate-pulse">⏳ Menarik data laporan...</td>
+            <td colspan="4" class="text-center py-10 text-gray-400 font-medium animate-pulse">⏳ Menarik data dari tab LOG_HISTORY...</td>
           </tr>
         </tbody>
       </table>
     </div>
+
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbx2PBgvgwQ21LuIoOpx8VQcEi6GsycKi2JCvx0CBIDwqRqJK80xuY5eq_sdoAjWqDLk2Q/exec?action=laporan"; 
+    // URL Google Apps Script Web App Anda
+    const BASE_URL = "https://script.google.com/macros/s/AKfycbzdqBHUNutuuYhh1-e8r0UMBdcX9AyYfFL7SNnUViY0dUM8LtNCRVMM1_eeLvdi7kri/exec";
+    const API_URL = BASE_URL + "?action=laporan"; 
     
-    // Jeda waktu refresh otomatis (10000 milidetik = 10 detik)
+    // Interval waktu auto-refresh (10000 ms = 10 detik)
     const REFRESH_INTERVAL = 10000; 
 
     let masterRows = [];
-    let currentHeaders = [];
-    let filterTerpilih = ""; // Variabel global untuk mengunci pilihan user agar tidak ter-reset
+    let currentHeaders = ["Tanggal", "Waktu", "Data Barcode", "Foto Bukti"];
+    let filterTerpilih = "ALL"; 
 
     async function ambilData(isInitial = false) {
       try {
-        // 💡 PERBAIKAN 1: Tambahkan Cache-Buster menggunakan timestamp dinamis (?_t=angka) 
-        // Ini memaksa browser untuk selalu meminta data paling baru dari server Google Sheets
-        const urlDenganAntiCache = API_URL + "&_t=" + Date.now();
+        // Anti-cache timestamp agar browser selalu mengambil data paling baru
+        const urlAntiCache = API_URL + "&_t=" + Date.now();
 
-        const response = await fetch(urlDenganAntiCache);
+        const response = await fetch(urlAntiCache);
+        if (!response.ok) throw new Error("Gagal terhubung ke Apps Script");
+
         const data = await response.json();
         if (data.error) throw new Error(data.error);
+        if (!Array.isArray(data) || data.length === 0) throw new Error("Sheet LOG_HISTORY kosong");
         
+        // Baris 0 = Header, Baris 1 dst = Data
         currentHeaders = data[0]; 
         masterRows = data.slice(1);  
         
-        // Render nama judul kolom ke tabel
-        document.getElementById('tableHeader').innerHTML = currentHeaders.map(h => `<th class="py-3 px-4">${h}</th>`).join('');
+        // 1. Render Header Tabel
+        const headerEl = document.getElementById('tableHeader');
+        if (currentHeaders.length >= 4) {
+          headerEl.innerHTML = `
+            <th class="py-3 px-4">${currentHeaders[0] || 'Tanggal'}</th>
+            <th class="py-3 px-4">${currentHeaders[1] || 'Waktu'}</th>
+            <th class="py-3 px-4">${currentHeaders[2] || 'Data Barcode'}</th>
+            <th class="py-3 px-4 text-center">${currentHeaders[3] || 'Foto Bukti'}</th>
+          `;
+        }
         
-        // Ambil list kategori unik terbaru dari Kolom F
-        const kategoriUnik = [...new Set(masterRows.map(r => r[0]))].filter(k => k !== undefined && k !== "");
+        // 2. Olah Kategori Tanggal Unik dari Kolom A (Index 0)
+        const tanggalUnik = [...new Set(masterRows.map(r => r[0]))]
+          .filter(t => t !== undefined && t !== null && t.toString().trim() !== "" && t !== currentHeaders[0]);
         
         const dropdown = document.getElementById('filterDropdown');
         
-        // Jika web baru pertama kali dibuka, default-kan ke kategori pertama
-        if (isInitial && kategoriUnik.length > 0) {
-          filterTerpilih = kategoriUnik[0];
-        }
+        let dropdownHtml = `<option value="ALL">Semua Tanggal (${masterRows.length})</option>`;
+        tanggalUnik.forEach(tgl => {
+          dropdownHtml += `<option value="${tgl}">${tgl}</option>`;
+        });
 
-        // Susun ulang HTML opsi dropdown secara bersih
-        dropdown.innerHTML = kategoriUnik.map(kat => `<option value="${kat}">${kat}</option>`).join('');
+        dropdown.innerHTML = dropdownHtml;
 
-        // 💡 PERBAIKAN 2: Sistem pengunci filter absolut
-        if (kategoriUnik.length > 0) {
-          if (kategoriUnik.includes(filterTerpilih)) {
-            dropdown.value = filterTerpilih; // Kunci pilihan user yang lama
-          } else {
-            filterTerpilih = kategoriUnik[0];
-            dropdown.value = filterTerpilih;
-          }
-          tampilkanTabel(masterRows.filter(r => r[0] === filterTerpilih));
+        // Kunci nilai filter saat ini agar tidak melompat ketika refresh
+        if (filterTerpilih !== "ALL" && tanggalUnik.includes(filterTerpilih)) {
+          dropdown.value = filterTerpilih;
         } else {
-          tampilkanTabel([]);
+          filterTerpilih = "ALL";
+          dropdown.value = "ALL";
         }
 
-        // 💡 PERBAIKAN 3: Update waktu refresh aktual di layar monitor agar terpantau aktif
+        // 3. Tampilkan Data
+        prosesFilter();
+
+        // 4. Update Indikator Waktu Refresh
         const skrg = new Date();
         const jam = String(skrg.getHours()).padStart(2, '0');
         const menit = String(skrg.getMinutes()).padStart(2, '0');
         const detik = String(skrg.getSeconds()).padStart(2, '0');
-        document.getElementById('refreshTime').innerText = `Terakhir diperbarui: Pukul ${jam}:${menit}:${detik} WIB`;
+        document.getElementById('refreshTime').innerText = `Diperbarui Pukul ${jam}:${menit}:${detik} WIB`;
 
       } catch (error) {
         console.error("Gagal memperbarui data:", error.message);
-        document.getElementById('refreshTime').innerText = `⚠️ Koneksi terputus, mencoba ulang...`;
+        document.getElementById('refreshTime').innerText = `⚠️ Terputus, mencoba lagi...`;
         if (isInitial) {
-          document.getElementById('tableBody').innerHTML = `<tr><td class="text-center py-10 text-red-500 font-bold">❌ Gagal memuat data: ${error.message}</td></tr>`;
+          document.getElementById('tableBody').innerHTML = `<tr><td colspan="4" class="text-center py-10 text-red-500 font-bold">❌ ${error.message}</td></tr>`;
         }
       }
+    }
+
+    function prosesFilter() {
+      let dataFiltered = masterRows;
+      if (filterTerpilih !== "ALL") {
+        dataFiltered = masterRows.filter(r => r[0] === filterTerpilih);
+      }
+      
+      document.getElementById('totalDataBadge').innerText = `Total Data: ${dataFiltered.length} Baris`;
+      tampilkanTabel(dataFiltered);
     }
 
     function tampilkanTabel(dataBaris) {
       const tbody = document.getElementById('tableBody');
       if (dataBaris.length === 0) {
-        tbody.innerHTML = `<tr><td class="text-center py-10 text-gray-400">Tidak ada data untuk pilihan ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-gray-400">Tidak ada data presensi pada tanggal ini.</td></tr>`;
         return;
       }
-      tbody.innerHTML = dataBaris.map(row => {
-        return `<tr class="hover:bg-gray-50 border-b border-gray-100">${row.map(cell => `<td class="py-3 px-4">${cell}</td>`).join('')}</tr>`;
+
+      // Tampilkan data paling baru di posisi atas
+      const dataReversed = [...dataBaris].reverse();
+
+      tbody.innerHTML = dataReversed.map(row => {
+        const tanggal = row[0] !== undefined ? row[0] : '-';
+        const waktu = row[1] !== undefined ? row[1] : '-';
+        const barcode = row[2] !== undefined ? row[2] : '-';
+        const linkFoto = row[3] !== undefined ? row[3].toString() : '';
+
+        // Format kolom link Foto Bukti
+        let fotoCell = `<span class="text-gray-400 italic text-xs">Tidak Ada</span>`;
+        if (linkFoto.startsWith('http://') || linkFoto.startsWith('https://')) {
+          fotoCell = `
+            <a href="${linkFoto}" target="_blank" 
+               class="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1 rounded-lg text-xs font-bold transition-all shadow-xs">
+               🖼️ Buka Foto
+            </a>
+          `;
+        }
+
+        return `
+          <tr class="hover:bg-blue-50/40 transition-colors border-b border-gray-100">
+            <td class="py-3 px-4 font-medium text-gray-800">${tanggal}</td>
+            <td class="py-3 px-4 text-gray-600">${waktu}</td>
+            <td class="py-3 px-4 font-mono font-bold text-blue-950">${barcode}</td>
+            <td class="py-3 px-4 text-center">${fotoCell}</td>
+          </tr>
+        `;
       }).join('');
     }
 
-    // 📥 FUNGSI TARIK DATA (DOWNLOAD CSV HASIL DROPDOWN)
+    // FUNGSI EXPORT / TARIK DATA CSV
     function tarikDataHasilFilter() {
-      if (!filterTerpilih || masterRows.length === 0) {
-        alert("Data belum siap atau tidak tersedia untuk diunduh!");
+      if (masterRows.length === 0) {
+        alert("Data belum tersedia untuk diunduh!");
         return;
       }
 
-      const dataDisaring = masterRows.filter(r => r[0] === filterTerpilih);
+      let dataDisaring = masterRows;
+      let namaFile = "Laporan_Presensi_LOG_HISTORY_Semua.csv";
+
+      if (filterTerpilih !== "ALL") {
+        dataDisaring = masterRows.filter(r => r[0] === filterTerpilih);
+        namaFile = `Laporan_Presensi_${filterTerpilih.replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
+      }
+
       const kontenCSV = [currentHeaders, ...dataDisaring]
-        .map(baris => baris.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(","))
+        .map(baris => baris.map(cell => `"${(cell !== undefined && cell !== null ? cell : "").toString().replace(/"/g, '""')}"`).join(","))
         .join("\n");
 
       const blob = new Blob(["\uFEFF" + kontenCSV], { type: 'text/csv;charset=utf-8;' });
@@ -149,32 +226,30 @@
       
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `Laporan_${filterTerpilih.replace(/[^a-zA-Z0-9]/g, "_")}.csv`);
+      link.setAttribute("download", namaFile);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
-    // Tangkap perubahan ketika user sengaja mengklik dropdown
+    // Event Listener ketika dropdown filter diubah
     document.getElementById('filterDropdown').addEventListener('change', function() {
-      filterTerpilih = this.value; // Amankan opsi pilihan baru ke variabel global
-      tampilkanTabel(masterRows.filter(r => r[0] === filterTerpilih));
+      filterTerpilih = this.value;
+      prosesFilter();
     });
 
-    // Panggilan pertama saat halaman dibuka pertama kali
+    // Panggilan awal saat web dibuka
     ambilData(true);
 
-    // 💡 PERBAIKAN 4: Menggunakan Antrean Timeout Berantai (Lebih aman dari setInterval)
-    // Fungsi ini akan menjamin request berikutnya dikirim 10 detik SETELAH request sebelumnya sukses didownload.
+    // Siklus Auto-Refresh 10 Detik
     function mulaiSiklusAutoRefresh() {
       setTimeout(async () => {
         await ambilData(false); 
-        mulaiSiklusAutoRefresh(); // Panggil dirinya sendiri untuk membuat loop abadi yang sehat
+        mulaiSiklusAutoRefresh();
       }, REFRESH_INTERVAL);
     }
 
-    // Aktifkan siklus loop otomatis
     mulaiSiklusAutoRefresh();
   </script>
 </body>
