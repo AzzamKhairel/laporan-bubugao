@@ -3,233 +3,234 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Monitoring Premium - Multi Table</title>
+  <title>Web Laporan Realtime - Presensi BU BU GAO</title>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <style>
-    body { background-color: #f3f4f6; }
+  <style> 
+    body { background-color: #f3f4f6; } 
   </style>
 </head>
 <body class="p-4 md:p-8">
 
-  <div class="max-w-7xl mx-auto flex flex-col gap-6">
-    
-    <!-- HEADER & FILTER -->
-    <div class="bg-blue-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 rounded-2xl shadow-xl">
+  <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+    <!-- Header Section -->
+    <div class="bg-blue-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-wide">📊 DASHBOARD MONITORING PRESENSI</h1>
-        <p class="text-blue-200 text-sm mt-1">Sistem Laporan Real-Time via Log History Bubugao x BTN</p>
+        <h1 class="text-2xl font-bold tracking-wide">📋 LAPORAN LOG HISTORY</h1>
+        <p class="text-blue-200 text-sm mt-1">
+          Presensi BU BU GAO • 
+          <span class="text-emerald-400 font-semibold animate-pulse">● Auto-Refresh Aktif</span>
+          <span id="refreshTime" class="block text-xs text-blue-300 mt-0.5 font-mono">Menghubungkan ke server...</span>
+        </p>
       </div>
       
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2 bg-blue-800 p-2 rounded-xl border border-blue-700">
-          <label class="text-sm font-semibold whitespace-nowrap">Filter Data (Kolom M):</label>
-          <select id="filterDropdown" class="bg-white text-gray-800 rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer w-44">
-            <option>Memuat...</option>
+      <!-- Filter & Fitur Tarik Data -->
+      <div class="flex flex-wrap items-center gap-3 bg-blue-800 p-2 rounded-xl border border-blue-700">
+        <div class="flex items-center gap-2">
+          <label for="filterDropdown" class="text-sm font-semibold whitespace-nowrap">Filter Tanggal:</label>
+          <select id="filterDropdown" class="bg-white text-gray-800 rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer min-w-[150px]">
+            <option value="ALL">Memuat...</option>
           </select>
         </div>
-        <button onclick="ambilData()" class="bg-blue-700 hover:bg-blue-600 active:scale-95 text-white text-sm font-bold px-4 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
-          🔄 Refresh
+        
+        <!-- Tombol Tarik Data Hasil Filter -->
+        <button id="downloadBtn" onclick="tarikDataHasilFilter()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer active:scale-95">
+          📥 Tarik Data
         </button>
       </div>
     </div>
 
-    <!-- GRID 4 TABEL MONITORING -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      
-      <!-- TABEL 1 (Kolom A - E) -->
-      <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden flex flex-col">
-        <div class="bg-gray-100 px-5 py-3 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center">
-          <span>📋 Data Utama (Kolom A - E)</span>
-          <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-semibold">Tabel 1</span>
-        </div>
-        <div class="overflow-x-auto p-4 flex-grow">
-          <table class="w-full text-left border-collapse text-xs md:text-sm">
-            <thead>
-              <tr id="headerA_E" class="border-b-2 border-gray-200 text-gray-500 font-bold uppercase tracking-wider"></tr>
-            </thead>
-            <tbody id="bodyA_E" class="text-gray-700 divide-y divide-gray-100">
-              <tr><td colspan="5" class="text-center py-6 text-gray-400">⏳ Menunggu data...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- TABEL 2 (Kolom G - K) -->
-      <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden flex flex-col">
-        <div class="bg-gray-100 px-5 py-3 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center">
-          <span>🔍 Detail Log (Kolom G - K)</span>
-          <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-semibold">Tabel 2</span>
-        </div>
-        <div class="overflow-x-auto p-4 flex-grow">
-          <table class="w-full text-left border-collapse text-xs md:text-sm">
-            <thead>
-              <tr id="headerG_K" class="border-b-2 border-gray-200 text-gray-500 font-bold uppercase tracking-wider"></tr>
-            </thead>
-            <tbody id="bodyG_K" class="text-gray-700 divide-y divide-gray-100">
-              <tr><td colspan="5" class="text-center py-6 text-gray-400">⏳ Menunggu data...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- TABEL 3 (Kolom M - N) -->
-      <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden flex flex-col">
-        <div class="bg-gray-100 px-5 py-3 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center">
-          <span>📊 Status Kehadiran (Kolom M - N)</span>
-          <span class="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-semibold">Tabel 3</span>
-        </div>
-        <div class="overflow-x-auto p-4 flex-grow">
-          <table class="w-full text-left border-collapse text-xs md:text-sm">
-            <thead>
-              <tr id="headerM_N" class="border-b-2 border-gray-200 text-gray-500 font-bold uppercase tracking-wider"></tr>
-            </thead>
-            <tbody id="bodyM_N" class="text-gray-700 divide-y divide-gray-100">
-              <tr><td colspan="2" class="text-center py-6 text-gray-400">⏳ Menunggu data...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- TABEL 4 (Kolom P - Q) -->
-      <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden flex flex-col">
-        <div class="bg-gray-100 px-5 py-3 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center">
-          <span>📌 Keterangan Tambahan (Kolom P - Q)</span>
-          <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full font-semibold">Tabel 4</span>
-        </div>
-        <div class="overflow-x-auto p-4 flex-grow">
-          <table class="w-full text-left border-collapse text-xs md:text-sm">
-            <thead>
-              <tr id="headerP_Q" class="border-b-2 border-gray-200 text-gray-500 font-bold uppercase tracking-wider"></tr>
-            </thead>
-            <tbody id="bodyP_Q" class="text-gray-700 divide-y divide-gray-100">
-              <tr><td colspan="2" class="text-center py-6 text-gray-400">⏳ Menunggu data...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
+    <!-- Tabel Laporan -->
+    <div class="overflow-x-auto p-6">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr id="tableHeader" class="border-b-2 border-gray-200 text-gray-600 text-sm font-bold uppercase tracking-wider bg-gray-50">
+            <th class="py-3 px-4">Tanggal</th>
+            <th class="py-3 px-4">Waktu</th>
+            <th class="py-3 px-4">Data Barcode</th>
+            <th class="py-3 px-4 text-center">Foto Bukti</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody" class="text-gray-700 text-sm divide-y divide-gray-100">
+          <tr>
+            <td colspan="4" class="text-center py-10 text-gray-400 font-medium animate-pulse">⏳ Menarik data laporan...</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
   <script>
-    // Link API Google Apps Script Menggunakan action=laporan (Sama seperti Presensi)
+    // URL API Google Apps Script Baru (LOG_HISTORY Kolom A-D)
     const API_URL = "https://script.google.com/macros/s/AKfycbzdqBHUNutuuYhh1-e8r0UMBdcX9AyYfFL7SNnUViY0dUM8LtNCRVMM1_eeLvdi7kri/exec?action=laporan"; 
     
-    // Konfigurasi Filter Utama memakai Kolom M (Index ke-12)
-    const KOLOM_FILTER = 12; 
+    // Jeda waktu refresh otomatis (10000 milidetik = 10 detik)
+    const REFRESH_INTERVAL = 10000; 
+
     let masterRows = [];
+    let currentHeaders = [];
+    let filterTerpilih = "ALL"; // Default tampilkan semua tanggal
 
-    // Pemetaan index array sesuai rentang kolom di Google Sheet
-    const RANGE_A_E = [0, 1, 2, 3, 4];       // Kolom A, B, C, D, E
-    const RANGE_G_K = [6, 7, 8, 9, 10];      // Kolom G, H, I, J, K
-    const RANGE_M_N = [12, 13];              // Kolom M, N
-    const RANGE_P_Q = [15, 16];              // Kolom P, Q
-
-    async function ambilData() {
+    async function ambilData(isInitial = false) {
       try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error("Gagal terhubung dengan server Google API");
-        
+        // Anti-Cache timestamp agar selalu mengambil data paling baru dari server
+        const urlDenganAntiCache = API_URL + "&_t=" + Date.now();
+
+        const response = await fetch(urlDenganAntiCache);
+        if (!response.ok) throw new Error("Gagal terhubung ke server API Google");
+
         const data = await response.json();
         if (data.error) throw new Error(data.error);
-        if (!Array.isArray(data) || data.length === 0) throw new Error("Data Sheet Kosong");
+        if (!Array.isArray(data) || data.length === 0) throw new Error("Data sheet LOG_HISTORY kosong");
         
-        const headers = data[0]; 
+        currentHeaders = data[0]; 
         masterRows = data.slice(1);  
         
-        // 1. Generate Judul Header Otomatis untuk Masing-Masing Tabel
-        buatHeader('headerA_E', headers, RANGE_A_E);
-        buatHeader('headerG_K', headers, RANGE_G_K);
-        buatHeader('headerM_N', headers, RANGE_M_N);
-        buatHeader('headerP_Q', headers, RANGE_P_Q);
+        // Render nama judul kolom ke tabel (Kolom A - D)
+        const headerEl = document.getElementById('tableHeader');
+        if (currentHeaders.length >= 4) {
+          headerEl.innerHTML = `
+            <th class="py-3 px-4">${currentHeaders[0] || 'Tanggal'}</th>
+            <th class="py-3 px-4">${currentHeaders[1] || 'Waktu'}</th>
+            <th class="py-3 px-4">${currentHeaders[2] || 'Data Barcode'}</th>
+            <th class="py-3 px-4 text-center">${currentHeaders[3] || 'Foto Bukti'}</th>
+          `;
+        }
         
-        // 2. Generate Dropdown Unik dari Kolom Filter (Kolom M / Index 12)
+        // Ambil list tanggal unik dari Kolom A (Index 0)
+        const tanggalUnik = [...new Set(masterRows.map(r => r[0]))].filter(t => t !== undefined && t !== null && t.toString().trim() !== "");
+        
         const dropdown = document.getElementById('filterDropdown');
-        const pilihanSebelumnya = dropdown.value;
-
-        const kategoriUnik = [...new Set(masterRows.map(r => r[KOLOM_FILTER]))].filter(k => k !== undefined && k !== null && k.toString().trim() !== "");
         
-        dropdown.innerHTML = `<option value="ALL">-- Tampilkan Semua --</option>`; 
-        kategoriUnik.forEach(kat => {
-          dropdown.innerHTML += `<option value="${kat}">${kat}</option>`;
+        // Opsi dasar "Semua Tanggal"
+        let dropdownHtml = `<option value="ALL">Semua Tanggal (${masterRows.length})</option>`;
+        tanggalUnik.forEach(tgl => {
+          dropdownHtml += `<option value="${tgl}">${tgl}</option>`;
         });
 
-        // Pertahankan opsi pilihan yang sedang aktif
-        if (pilihanSebelumnya && [...dropdown.options].some(o => o.value === pilihanSebelumnya)) {
-          dropdown.value = pilihanSebelumnya;
-        } else if (kategoriUnik.length > 0) {
-          dropdown.value = kategoriUnik[0];
+        dropdown.innerHTML = dropdownHtml;
+
+        // Pertahankan opsi filter yang sedang dipilih user
+        if (filterTerpilih !== "ALL" && tanggalUnik.includes(filterTerpilih)) {
+          dropdown.value = filterTerpilih;
         } else {
+          filterTerpilih = "ALL";
           dropdown.value = "ALL";
         }
 
-        // Terapkan filter data
+        // Tampilkan data sesuai filter yang aktif
         prosesFilter();
 
-        // Listener perubahan dropdown
-        dropdown.onchange = prosesFilter;
+        // Update jam/waktu auto-refresh
+        const skrg = new Date();
+        const jam = String(skrg.getHours()).padStart(2, '0');
+        const menit = String(skrg.getMinutes()).padStart(2, '0');
+        const detik = String(skrg.getSeconds()).padStart(2, '0');
+        document.getElementById('refreshTime').innerText = `Terakhir diperbarui: Pukul ${jam}:${menit}:${detik} WIB`;
 
       } catch (error) {
-        console.error(error);
-        alert("Terjadi Kendala: " + error.message);
+        console.error("Gagal memperbarui data:", error.message);
+        document.getElementById('refreshTime').innerText = `⚠️ Koneksi terputus, mencoba ulang...`;
+        if (isInitial) {
+          document.getElementById('tableBody').innerHTML = `<tr><td colspan="4" class="text-center py-10 text-red-500 font-bold">❌ Gagal memuat data: ${error.message}</td></tr>`;
+        }
       }
     }
 
     function prosesFilter() {
-      const dropdown = document.getElementById('filterDropdown');
-      const pilihan = dropdown.value;
-      
       let dataFiltered = masterRows;
-      if (pilihan !== "ALL") {
-        dataFiltered = masterRows.filter(r => r[KOLOM_FILTER] === pilihan);
+      if (filterTerpilih !== "ALL") {
+        dataFiltered = masterRows.filter(r => r[0] === filterTerpilih);
       }
-      
-      distribusiTabel(dataFiltered);
+      tampilkanTabel(dataFiltered);
     }
 
-    // Pembuat elemen header tabel
-    function buatHeader(elementId, headers, indexRange) {
-      document.getElementById(elementId).innerHTML = indexRange
-        .map(idx => `<th class="py-2.5 px-4">${headers[idx] || 'Kolom ' + String.fromCharCode(65 + idx)}</th>`)
-        .join('');
-    }
-
-    // Membagi baris data ke 4 tabel berbeda
-    function distribusiTabel(dataBaris) {
-      renderMasingMasingTabel('bodyA_E', dataBaris, RANGE_A_E);
-      renderMasingMasingTabel('bodyG_K', dataBaris, RANGE_G_K);
-      renderMasingMasingTabel('bodyM_N', dataBaris, RANGE_M_N);
-      renderMasingMasingTabel('bodyP_Q', dataBaris, RANGE_P_Q);
-    }
-
-    // Rendering isi sel tabel (Lengkap dengan pendeteksi URL Link Foto)
-    function renderMasingMasingTabel(tbodyId, dataBaris, indexRange) {
-      const tbody = document.getElementById(tbodyId);
+    function tampilkanTabel(dataBaris) {
+      const tbody = document.getElementById('tableBody');
       if (dataBaris.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${indexRange.length}" class="text-center py-6 text-gray-400">Tidak ada data</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-gray-400">Tidak ada data untuk filter ini.</td></tr>`;
         return;
       }
-      
-      tbody.innerHTML = dataBaris.map(row => {
-        const columns = indexRange.map(idx => {
-          let isiSel = row[idx] !== undefined && row[idx] !== null ? row[idx].toString() : '';
-          
-          // Jika isi sel berupa link URL (Foto Bukti), jadikan tombol interaktif
-          if (isiSel.startsWith('http://') || isiSel.startsWith('https://')) {
-            return `<td class="py-2.5 px-4"><a href="${isiSel}" target="_blank" class="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1 rounded text-xs font-bold transition-all">🖼️ Lihat Foto</a></td>`;
-          }
-          
-          return `<td class="py-2.5 px-4 truncate max-w-[150px]" title="${isiSel}">${isiSel || '-'}</td>`;
-        }).join('');
-        return `<tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">${columns}</tr>`;
+
+      // Tampilkan data dari yang paling terbaru (urutan terbalik)
+      const dataReversed = [...dataBaris].reverse();
+
+      tbody.innerHTML = dataReversed.map(row => {
+        const tanggal = row[0] !== undefined ? row[0] : '-';
+        const waktu = row[1] !== undefined ? row[1] : '-';
+        const barcode = row[2] !== undefined ? row[2] : '-';
+        const linkFoto = row[3] !== undefined ? row[3].toString() : '';
+
+        // Format kolom Foto Bukti (Index 3)
+        let fotoCell = `<span class="text-gray-400 italic">Tidak Ada</span>`;
+        if (linkFoto.startsWith('http://') || linkFoto.startsWith('https://')) {
+          fotoCell = `
+            <a href="${linkFoto}" target="_blank" 
+               class="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1 rounded-lg text-xs font-bold transition-all">
+               🖼️ Lihat Foto
+            </a>
+          `;
+        }
+
+        return `
+          <tr class="hover:bg-blue-50/40 transition-colors border-b border-gray-100">
+            <td class="py-3 px-4 font-medium text-gray-800">${tanggal}</td>
+            <td class="py-3 px-4 text-gray-600">${waktu}</td>
+            <td class="py-3 px-4 font-mono font-bold text-blue-900">${barcode}</td>
+            <td class="py-3 px-4 text-center">${fotoCell}</td>
+          </tr>
+        `;
       }).join('');
     }
 
-    // Eksekusi program saat web pertama kali diakses
-    ambilData();
+    // FUNGSI TARIK DATA (DOWNLOAD CSV HASIL FILTER)
+    function tarikDataHasilFilter() {
+      if (masterRows.length === 0) {
+        alert("Data belum siap atau tidak tersedia untuk diunduh!");
+        return;
+      }
 
-    // Auto Refresh setiap 15 detik agar monitoring selalu terbaru
-    setInterval(ambilData, 15000);
+      let dataDisaring = masterRows;
+      let namaFile = "Laporan_Log_History_Semua.csv";
+
+      if (filterTerpilih !== "ALL") {
+        dataDisaring = masterRows.filter(r => r[0] === filterTerpilih);
+        namaFile = `Laporan_Log_History_${filterTerpilih.replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
+      }
+
+      const kontenCSV = [currentHeaders, ...dataDisaring]
+        .map(baris => baris.map(cell => `"${(cell !== undefined && cell !== null ? cell : "").toString().replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+
+      const blob = new Blob(["\uFEFF" + kontenCSV], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", namaFile);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Tangkap perubahan ketika user memilih tanggal di dropdown
+    document.getElementById('filterDropdown').addEventListener('change', function() {
+      filterTerpilih = this.value;
+      prosesFilter();
+    });
+
+    // Panggilan pertama saat halaman dibuka
+    ambilData(true);
+
+    // Loop Auto-Refresh Berantai (setiap 10 detik)
+    function mulaiSiklusAutoRefresh() {
+      setTimeout(async () => {
+        await ambilData(false); 
+        mulaiSiklusAutoRefresh();
+      }, REFRESH_INTERVAL);
+    }
+
+    mulaiSiklusAutoRefresh();
   </script>
 </body>
 </html>
